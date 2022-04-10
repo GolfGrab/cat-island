@@ -4,15 +4,13 @@ from utils import cut_picture
 # Player Settings #
 PLAYER_VELOCITY = pygame.math.Vector2(0, 0)
 PLAYER_POSITION = pygame.math.Vector2(200, 200)
-PLAYER_ACCELERATION = pygame.math.Vector2(0, 0)
-PLAYER_WALK_ACCELERATION = 0.5
-PLAYER_MAX_WALK_SPEED = 0.8
+PLAYER_WALK_SPEED = 1
+PLAYER_RUN_SPEED = 1.5
 
-# Physics Settings #
-FRICTION = 0.4
 
 # Animation Settings #
-ANIMATION_COOLDOWN = 200
+WALK_ANIMATION_COOLDOWN = 200
+RUN_ANIMATION_COOLDOWN = 150
 SPRITE_SCALE = 1
 BLOCKSIZE = 16
 
@@ -25,106 +23,108 @@ class Player(pygame.sprite.Sprite):
         # Load Player Animation #
         self.animations = self.get_animation()
         self.animation_type = "right"
-        self.rect = self.animations["left"][0].get_rect()
-        self.rect.topleft = PLAYER_POSITION
-
+        self.rect = self.animations["right"][0].get_rect()
+        self.old_rect = self.rect
         # Load Player Settings #
-        self.velocity = PLAYER_VELOCITY
+        self.rect.midbottom = PLAYER_POSITION
+        self.hitbox = self.rect.inflate(-10, -10)
+        self.hitbox.midbottom = self.rect.midbottom
+        self.old_hitbox = self.hitbox
         self.position = PLAYER_POSITION
-        self.acceleration = PLAYER_ACCELERATION
+        self.velocity = PLAYER_VELOCITY
+        self.delta_position = pygame.math.Vector2(0, 0)
+        self.animation_cooldown = WALK_ANIMATION_COOLDOWN
 
     def move(self, press_vector, pressed_run, island, dt):
+        self.old_hitbox = self.hitbox.copy()
+        self.old_rect = self.rect.copy()
+
         global ANIMATION_COOLDOWN
-
-        old_position = self.position.copy()
-        if (pressed_run and self.velocity.length() > 0):
-
-            PLAYER_MAX_WALK_SPEED = 1.5
-
-            ANIMATION_COOLDOWN = 150
+        if (pressed_run):
+            self.velocity = press_vector * PLAYER_RUN_SPEED
         else:
-            PLAYER_MAX_WALK_SPEED = 0.8
-            ANIMATION_COOLDOWN = 200
+            self.velocity = press_vector * PLAYER_WALK_SPEED
 
-        if press_vector.x != 0 and press_vector.y != 0:
-            press_vector = press_vector.normalize()
-        # Update acceleration #
-        self.acceleration = press_vector * PLAYER_WALK_ACCELERATION
-
-        # Update Velocity #
-        self.velocity += self.acceleration * dt
-
-        # friction #
-        if press_vector.length() == 0:
-            self.velocity = self.velocity*(1-FRICTION)
-
-        # min vel to 0 #
-        if self.velocity.x < 0.005 and press_vector.x == 0:
-            self.velocity.x = 0
-        if self.velocity.y < 0.005 and press_vector.y == 0:
-            self.velocity.y = 0
-
-        # limit Velocity #
-        if self.velocity.length() > PLAYER_MAX_WALK_SPEED:
-            if self.velocity.x == 0:
-                self.velocity.y = PLAYER_MAX_WALK_SPEED * \
-                    self.velocity.y/abs(self.velocity.y)
-            elif self.velocity.y == 0:
-                self.velocity.x = PLAYER_MAX_WALK_SPEED * \
-                    self.velocity.x/abs(self.velocity.x)
-            else:
-                self.velocity = (self.velocity.normalize(
-                )+press_vector)/2 * PLAYER_MAX_WALK_SPEED
-
-        # Update Position #
-        self.position += self.velocity * dt
-        self.position = pygame.math.Vector2(
-            round(self.position.x), round(self.position.y))
-        self.rect.topleft = self.position
+        dx = self.velocity.x * dt
+        dy = self.velocity.y * dt
+        self.update_position(dx, dy)
 
         # Check Collision #
-        collision_list = self.check_collision(island)
 
-        for block in collision_list:
-            if self.velocity.y > 0 and press_vector.y > 0:
-                self.rect.y = old_position.y
-                self.velocity.y = 0
-                self.position.y = self.rect.topleft[1]
-            if self.velocity.y < 0 and press_vector.y < 0:
-                self.rect.y = old_position.y
-                self.velocity.y = 0
-                self.position.y = self.rect.topleft[1]
+        collisions = self.check_collision(island)
 
-        collision_list = self.check_collision(island)
+        for block in collisions:
+            if self.velocity.x > 0 and self.hitbox.right+2 > block.left and self.old_hitbox.right <= block.left:
+                self.hitbox.right = block.left
+                self.position.x = self.hitbox.midbottom[0]
+                self.rect.midbottom = self.hitbox.midbottom
+                dx = 0
+            elif self.velocity.x < 0 and self.hitbox.left-2 < block.right and self.old_hitbox.left >= block.right:
+                self.hitbox.left = block.right
+                self.position.x = self.hitbox.midbottom[0]
+                self.rect.midbottom = self.hitbox.midbottom
+                dx = 0
+            elif self.velocity.y > 0 and self.hitbox.bottom+2 > block.top and self.old_hitbox.bottom <= block.top:
+                self.hitbox.bottom = block.top
+                self.position.y = self.hitbox.midbottom[1]
+                self.rect.midbottom = self.hitbox.midbottom
+                dy = 0
+            elif self.velocity.y < 0 and self.hitbox.top-2 < block.bottom and self.old_hitbox.top >= block.bottom:
+                self.hitbox.top = block.bottom
+                self.position.y = self.hitbox.midbottom[1]
+                self.rect.midbottom = self.hitbox.midbottom
+                dy = 0
 
-        for block in collision_list:
-            if self.velocity.x > 0 and press_vector.x > 0:
-                self.rect.x = old_position.x
-                self.velocity.x = 0
-                self.position.x = self.rect.topleft[0]
-            if self.velocity.x < 0 and press_vector.x < 0:
-                self.rect.x = old_position.x
-                self.velocity.x = 0
-                self.position.x = self.rect.topleft[0]
+        self.delta_position = pygame.math.Vector2(dx, dy)
+        if dx != 0 and dy != 0:
+            d = pygame.math.Vector2(dx, dy).normalize() * \
+                self.velocity.length()
+            self.update_position(d.x, d.y)
+
+        if (dx != 0 or dy != 0) and pressed_run:
+            self.animation_cooldown = RUN_ANIMATION_COOLDOWN
+        else:
+            self.animation_cooldown = WALK_ANIMATION_COOLDOWN
+
+    def update_position(self, dx, dy):
+        self.position = pygame.math.Vector2(
+            self.old_rect.midbottom[0], self.old_rect.midbottom[1]) + pygame.math.Vector2(dx, dy)
+        self.rect.midbottom = (round(self.position.x), round(self.position.y))
+        self.hitbox.midbottom = self.rect.midbottom
 
     def draw(self, screen):
+
         # Update Animation #
-        if self.velocity.x > 0:
+        if self.delta_position.x > 0:
             self.animation_type = "right"
-        elif self.velocity.x < 0:
+        elif self.delta_position.x < 0:
             self.animation_type = "left"
-        elif self.velocity.y > 0:
+        elif self.delta_position.y > 0:
             self.animation_type = "down"
-        elif self.velocity.y < 0:
+        elif self.delta_position.y < 0:
             self.animation_type = "up"
         else:
             screen.blit(
                 self.animations[self.animation_type][0], self.rect)
+
+            # pygame.draw.rect(screen, (255, 0, 0), self.rect, 0)
+            # for i in range(4):
+            #     pygame.draw.rect(screen, (0, 255, 0), self.rect, 1)
+            # pygame.draw.rect(screen, (0, 0, 255), self.hitbox, 0)
+            # for i in range(4):
+            #     pygame.draw.rect(screen, (0, 0, 0), self.hitbox, 1)
             return
 
         screen.blit(
             self.animations[self.animation_type][
-                pygame.time.get_ticks()//ANIMATION_COOLDOWN % 3 + 1], self.rect)
+                pygame.time.get_ticks()//self.animation_cooldown % 3 + 1], self.rect)
+
+        # pygame.draw.rect(screen, (255, 0, 0), self.rect, 0)
+        # for i in range(4):
+        #     pygame.draw.rect(screen, (0, 255, 0), self.rect, 1)
+        # pygame.draw.rect(screen, (0, 0, 255), self.hitbox, 0)
+        # for i in range(4):
+        #     pygame.draw.rect(screen, (0, 0, 0), self.hitbox, 1)
 
     def get_animation(self):
         pics = cut_picture("Characters/walk.png")
@@ -144,6 +144,6 @@ class Player(pygame.sprite.Sprite):
             for j in range(block_x-2, block_x+3):
                 if i < 0 or j < 0 or i >= len(island.block_map) or j >= len(island.block_map[0]):
                     continue
-                if island.block_map[i][j].id == -1 and self.rect.colliderect(island.block_map[i][j].rect):
+                if island.block_map[i][j].id == -1 and self.hitbox.colliderect(island.block_map[i][j].rect):
                     collision_list.append(island.block_map[i][j].rect)
         return collision_list
