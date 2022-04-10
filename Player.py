@@ -3,9 +3,9 @@ from utils import cut_picture
 
 # Player Settings #
 PLAYER_VELOCITY = pygame.math.Vector2(0, 0)
-PLAYER_POSITION = pygame.math.Vector2(200, 200)
+PLAYER_POSITION = pygame.math.Vector2(400, 400)
 PLAYER_WALK_SPEED = 1
-PLAYER_RUN_SPEED = 1.5
+PLAYER_RUN_SPEED = 1.2
 
 
 # Animation Settings #
@@ -49,37 +49,26 @@ class Player(pygame.sprite.Sprite):
         dy = self.velocity.y * dt
         self.update_position(dx, dy)
 
-        # Check Collision #
+        # # Check Collision #
 
-        collisions = self.check_collision(island)
+        collisions = self.check_collision_point(island)
 
-        for block in collisions:
-            if self.velocity.x > 0 and self.hitbox.right+2 > block.left and self.old_hitbox.right <= block.left:
-                self.hitbox.right = block.left
-                self.position.x = self.hitbox.midbottom[0]
-                self.rect.midbottom = self.hitbox.midbottom
-                dx = 0
-            elif self.velocity.x < 0 and self.hitbox.left-2 < block.right and self.old_hitbox.left >= block.right:
-                self.hitbox.left = block.right
-                self.position.x = self.hitbox.midbottom[0]
-                self.rect.midbottom = self.hitbox.midbottom
-                dx = 0
-            elif self.velocity.y > 0 and self.hitbox.bottom+2 > block.top and self.old_hitbox.bottom <= block.top:
-                self.hitbox.bottom = block.top
-                self.position.y = self.hitbox.midbottom[1]
-                self.rect.midbottom = self.hitbox.midbottom
-                dy = 0
-            elif self.velocity.y < 0 and self.hitbox.top-2 < block.bottom and self.old_hitbox.top >= block.bottom:
-                self.hitbox.top = block.bottom
-                self.position.y = self.hitbox.midbottom[1]
-                self.rect.midbottom = self.hitbox.midbottom
-                dy = 0
+        if collisions["right"]:
+            dx = 0
+        if collisions["left"]:
+            dx = 0
+        if collisions["up"]:
+            dy = 0
+        if collisions["down"]:
+            dy = 0
 
         self.delta_position = pygame.math.Vector2(dx, dy)
         if dx != 0 and dy != 0:
-            d = pygame.math.Vector2(dx, dy).normalize() * \
-                self.velocity.length()
-            self.update_position(d.x, d.y)
+            dx = dx / 1.414
+            dy = dy / 1.414
+        self.update_position(dx, dy)
+
+        self.velocity = pygame.math.Vector2(dx, dy)
 
         if (dx != 0 or dy != 0) and pressed_run:
             self.animation_cooldown = RUN_ANIMATION_COOLDOWN
@@ -136,14 +125,22 @@ class Player(pygame.sprite.Sprite):
                     pics[n+i*36+j*3], (pics[n+i*36+j*3].get_width()*SPRITE_SCALE, pics[n+i*36+j*3].get_height()*SPRITE_SCALE)))
         return animations
 
-    def check_collision(self, island):
-        collision_list = []
+    def check_collision_point(self, island):
+        collisions = {"left": False, "right": False,
+                      "up": False, "down": False}
         block_y = int(self.position.y/BLOCKSIZE)
         block_x = int(self.position.x/BLOCKSIZE)
         for i in range(block_y-2, block_y+3):
             for j in range(block_x-2, block_x+3):
                 if i < 0 or j < 0 or i >= len(island.block_map) or j >= len(island.block_map[0]):
                     continue
-                if island.block_map[i][j].id == -1 and self.hitbox.colliderect(island.block_map[i][j].rect):
-                    collision_list.append(island.block_map[i][j].rect)
-        return collision_list
+                # test left
+                if island.block_map[i][j].id == -1 and island.block_map[i][j].rect.collidepoint(self.hitbox.midleft):
+                    collisions["left"] = True
+                if island.block_map[i][j].id == -1 and island.block_map[i][j].rect.collidepoint(self.hitbox.midright):
+                    collisions["right"] = True
+                if island.block_map[i][j].id == -1 and island.block_map[i][j].rect.collidepoint(self.hitbox.midtop):
+                    collisions["up"] = True
+                if island.block_map[i][j].id == -1 and island.block_map[i][j].rect.collidepoint(self.hitbox.midbottom):
+                    collisions["down"] = True
+        return collisions

@@ -2,6 +2,7 @@ import pygame
 from Player import Player
 from Map import Map
 from Background import Background
+import time
 
 
 # Game Settings #
@@ -23,16 +24,19 @@ p1 = Player()
 
 # Load Map #
 water = Background("testmap_water.csv")
-island = Map("testmap_island.csv")
+island = Map("testmap2_island.csv")
 
 world_map = pygame.Surface((water.width, water.height))
 background = pygame.Surface((water.width, water.height))
+now_time = time.time()
 
 # Game loop #
 game_run = True
 while game_run:
     # tick #
-    dt = clock.tick(60) / 1000 * TARGET_FPS
+    clock.tick(TARGET_FPS)
+    dt = (time.time() - now_time) * 100
+    now_time = time.time()
 
     # Event handling #
     press_vector = pygame.math.Vector2(0, 0)

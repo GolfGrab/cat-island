@@ -11,7 +11,7 @@ class Map():
         self.textures = cut_picture(TEXTURE_PATH)
         self.block_map = []
         with open(map_path) as f:
-            text = f.read()
+            text = f.read().strip()
             data = [t.split(",")for t in text.split("\n")]
         for y_idx, row in enumerate(data):
             self.block_map.append([])
