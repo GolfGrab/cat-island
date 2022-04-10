@@ -5,7 +5,7 @@ from utils import cut_picture
 PLAYER_VELOCITY = pygame.math.Vector2(0, 0)
 PLAYER_POSITION = pygame.math.Vector2(400, 400)
 PLAYER_WALK_SPEED = 1
-PLAYER_RUN_SPEED = 1.2
+PLAYER_RUN_SPEED = 1.5
 
 
 # Animation Settings #

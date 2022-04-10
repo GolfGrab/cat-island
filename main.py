@@ -11,7 +11,7 @@ SCREEN_HEIGHT = int(1024 * 9 / 16)*2
 BG_COLOR = ("#9bd4c3")
 TARGET_FPS = 60
 BLOCKSIZE = 16
-ZOOM = 3
+ZOOM = 2
 
 # Load basic window and clock #
 pygame.init()
@@ -26,8 +26,11 @@ p1 = Player()
 water = Background("testmap_water.csv")
 island = Map("testmap2_island.csv")
 
-world_map = pygame.Surface((water.width, water.height))
 background = pygame.Surface((water.width, water.height))
+
+water.draw(background)
+island.draw(background)
+
 now_time = time.time()
 
 # Game loop #
@@ -67,7 +70,6 @@ while game_run:
 
     # Draw background #
     canvas = background.copy()
-    water.draw(background)
     island.draw(canvas)
 
     # Draw player #
