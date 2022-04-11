@@ -3,6 +3,8 @@ from Player import Player
 from Map import Map
 from Background import Background
 import time
+from Tree import Tree_Group, Tree
+from Townhall import Townhall
 
 
 # Game Settings #
@@ -22,9 +24,16 @@ clock = pygame.time.Clock()
 # Load Player #
 p1 = Player()
 
+# Load Townhall #
+townhall = Townhall()
+
+# Load tree group #
+tree_group = Tree_Group()
+
+
 # Load Map #
 water = Background("testmap_water.csv")
-island = Map("testmap2_island.csv")
+island = Map("testmap4_island.csv")
 
 background = pygame.Surface((water.width, water.height))
 
@@ -68,12 +77,26 @@ while game_run:
     # Move player #
     p1.move(press_vector, pressed_run, island, dt)
 
-    # Draw background #
+    # cut tree #
+    for tree in tree_group.tree_list:
+        tree.checkcut(p1, tree_group, dt)
+
+    # Random generation #
+    tree_group.random_gen_tree(island)
+
+    # Draw background #s
     canvas = background.copy()
     island.draw(canvas)
 
-    # Draw player #
-    p1.draw(canvas)
+    # Draw y sort #
+    y_sort = []
+    y_sort.append(p1)
+    y_sort.append(townhall)
+    y_sort.extend(tree_group.tree_list)
+    y_sort.sort(key=lambda x: x.position.y)
+
+    for obj in y_sort:
+        obj.draw(canvas)
 
     # Zoom #
     canvas = pygame.transform.scale(
@@ -91,6 +114,10 @@ while game_run:
     # Show FPS #
     screen.blit(pygame.font.Font(None, 32).render(
         f'FPS = {clock.get_fps():.2f}', True, (255, 255, 255)), (20, 100))
+
+    # Show Items #
+    screen.blit(pygame.font.Font(None, 32).render(
+        f'{list(p1.inventory.items.items())}', True, (255, 255, 255)), (20, 1000))
     # Update screen #
     pygame.display.update()
 

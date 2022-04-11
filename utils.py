@@ -17,3 +17,21 @@ def cut_picture(path):
             cut_tiles.append(new_surface)
 
     return cut_tiles
+
+
+def cut_picture_3x(path):
+    surface = pygame.image.load(path)
+    # surface = surface.convert_alpha()
+    tile_num_x = surface.get_size()[0] // 48
+    tile_num_y = surface.get_size()[1] // 48
+    cut_tiles = []
+    for row in range(tile_num_y):
+        for col in range(tile_num_x):
+            x = col * 48
+            y = row * 48
+            new_surface = pygame.Surface((48, 48))
+            new_surface.set_colorkey((0, 0, 0))
+            new_surface.blit(surface, (0, 0), pygame.Rect(x, y, 48, 48))
+            cut_tiles.append(new_surface)
+
+    return cut_tiles
