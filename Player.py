@@ -37,6 +37,7 @@ class Player(pygame.sprite.Sprite):
         self.animation_cooldown = WALK_ANIMATION_COOLDOWN
         self.inventory = Inventory()
         self.activity = "idle"
+        self.activity_list = []
 
     def move(self, press_vector, pressed_run, island, dt):
         self.old_hitbox = self.hitbox.copy()
@@ -83,6 +84,17 @@ class Player(pygame.sprite.Sprite):
             self.old_rect.midbottom[0], self.old_rect.midbottom[1]) + pygame.math.Vector2(dx, dy)
         self.rect.midbottom = (round(self.position.x), round(self.position.y))
         self.hitbox.midbottom = self.rect.midbottom
+
+    def update_activity(self):
+        if self.activity_list != []:
+            if "cut_done" in self.activity_list:
+                self.activity = "idle"
+            elif "cut_tree" in self.activity_list:
+                self.activity = "cut_tree"
+        else:
+            self.activity = "idle"
+
+        self.activity_list = []
 
     def draw(self, screen):
 
@@ -159,6 +171,7 @@ class Player(pygame.sprite.Sprite):
 class Inventory():
     def __init__(self) -> None:
         self.items = dict()
+        self.items_log = []
 
     def add_item(self, item, amount):
         if item in self.items:
@@ -174,3 +187,20 @@ class Inventory():
                 del self.items[item_name]
             return True
         return False
+
+    def notify_item_change(self, item_name, amount):
+        if item_name in self.items:
+            self.items[item_name] += amount
+        else:
+            self.items[item_name] = amount
+        print("Added " + str(amount) + " " + item_name)
+
+
+# class Item_log():
+#     def __init__(self, item, amount) -> None:
+#         self.item = ""
+
+
+# class Item():
+#     def __init__(self, item_name) -> None:
+#         self.item_name = item_name

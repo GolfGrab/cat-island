@@ -10,7 +10,7 @@ class Townhall(pygame.sprite.Sprite):
     def __init__(self) -> None:
         # Call the parent class (Sprite) constructor #
         super().__init__()
-        self.position = pygame.math.Vector2(400, 400)
+        self.position = pygame.math.Vector2(400, 410)
         self.sprites = self.get_sprites()
         self.animation_cooldown = 100
         self.hp = HP
@@ -18,7 +18,8 @@ class Townhall(pygame.sprite.Sprite):
             self.position.x, self.position.y, 2*BLOCKSIZE, 2*BLOCKSIZE)
         self.rect.center = self.position
         self.sprite_rect = self.sprites[0].get_rect()
-        self.sprite_rect.midbottom = self.rect.midbottom
+        self.sprite_rect.midbottom = (
+            self.rect.midbottom[0], self.rect.midbottom[1]+BLOCKSIZE)
 
     def draw(self, screen) -> None:
         screen.blit(self.sprites[pygame.time.get_ticks(
@@ -28,5 +29,6 @@ class Townhall(pygame.sprite.Sprite):
         picture_list = []
         for i in range(11):
             img = pygame.image.load(f"./Townhall/tile{i:03d}.png")
+            img = pygame.transform.scale2x(img)
             picture_list.append(img)
         return picture_list

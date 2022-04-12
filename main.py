@@ -27,18 +27,18 @@ p1 = Player()
 # Load Townhall #
 townhall = Townhall()
 
-# Load tree group #
-tree_group = Tree_Group()
-
 
 # Load Map #
 water = Background("testmap_water.csv")
-island = Map("testmap4_island.csv")
+island = Map("testmap5_island.csv")
 
 background = pygame.Surface((water.width, water.height))
 
 water.draw(background)
 island.draw(background)
+
+# Load tree group #
+tree_group = Tree_Group(island)
 
 now_time = time.time()
 
@@ -67,7 +67,7 @@ while game_run:
         press_vector.x -= 1
     if pressed[pygame.K_d] or pressed[pygame.K_RIGHT]:
         press_vector.x += 1
-    if pressed[pygame.K_SPACE] or pressed[pygame.K_w] or pressed[pygame.K_UP]:
+    if pressed[pygame.K_w] or pressed[pygame.K_UP]:
         press_vector.y -= 1
     if pressed[pygame.K_s] or pressed[pygame.K_DOWN]:
         press_vector.y += 1
@@ -77,12 +77,15 @@ while game_run:
     # Move player #
     p1.move(press_vector, pressed_run, island, dt)
 
+    # Random generation #
+    tree_group.random_gen_tree()
+
     # cut tree #
     for tree in tree_group.tree_list:
         tree.checkcut(p1, tree_group, dt)
 
-    # Random generation #
-    tree_group.random_gen_tree(island)
+    # update player activity #
+    p1.update_activity()
 
     # Draw background #s
     canvas = background.copy()
